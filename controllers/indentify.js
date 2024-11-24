@@ -12,7 +12,7 @@ export const identify = async (req, res) => {
         }
 
         // Fetch contacts matching email or phoneNumber
-        let matchingContacts = await prisma.contact.findFirst({
+        let matchingContacts = await prisma.contact.findMany({
             where: {
                 OR: [
                     { email: email },
