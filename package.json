@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "build": "echo \"No build step required for this backend\""
+    "build": "npx prisma generate && npx prisma migrate deploy"
   },
   "keywords": [],
   "author": "Rachit Kumar",
