@@ -5,13 +5,14 @@ export const identify = async (req, res) => {
     try {
         const { email, phoneNumber } = req.body;
 
+        // Validate input
         if (!email && !phoneNumber) {
             return res.status(400).json({
                 error: "At least one of email or phoneNumber must be provided.",
             });
         }
 
-        // Step 1: Find all matching contacts
+        // Fetch contacts matching email or phoneNumber
         let matchingContacts = await prisma.contact.findMany({
             where: {
                 OR: [
@@ -20,24 +21,25 @@ export const identify = async (req, res) => {
                 ],
             },
         });
-        if (matchingContacts.length > 0){
+
+        // Extend to all related contacts if matches exist
+        if (matchingContacts.length > 0) {
+            const firstContact = matchingContacts[0];
             matchingContacts = await prisma.contact.findMany({
                 where: {
                     OR: [
-                        { email: matchingContacts[0].email },
-                        { phoneNumber: matchingContacts[0].phoneNumber },
+                        { email: firstContact.email },
+                        { phoneNumber: firstContact.phoneNumber },
                     ],
                 },
             });
         }
 
-
         let primaryContact = null;
         const secondaryContacts = [];
 
-        // Step 2: Determine the primary contact
+        // Determine primary and secondary contacts
         if (matchingContacts.length > 0) {
-            // Find the primary contact (oldest with linkPrecedence = 'primary')
             primaryContact = matchingContacts.find(
                 (contact) => contact.linkPrecedence === "primary"
             );
@@ -46,16 +48,14 @@ export const identify = async (req, res) => {
                 primaryContact = matchingContacts[0];
             }
 
-
-
-            matchingContacts.forEach((contact) => {
+            for (const contact of matchingContacts) {
                 if (contact.id !== primaryContact.id) {
                     secondaryContacts.push(contact);
                 }
-            });
+            }
         }
 
-        // Step 3: If no matching contact is found, create a new primary contact
+        // If no primary contact, create one
         if (!primaryContact) {
             primaryContact = await prisma.contact.create({
                 data: {
@@ -65,17 +65,15 @@ export const identify = async (req, res) => {
                 },
             });
         } else {
-            // Step 4: Check if the request contains new info that warrants creating a secondary contact
-            const isNewInfo =
-                (email && !matchingContacts.some((contact) => contact.email === email)) ||
-                (phoneNumber &&
-                    !matchingContacts.some((contact) => contact.phoneNumber === phoneNumber));
+            // Check if new info (email/phoneNumber) is not already linked
+            const isEmailNew = email && !matchingContacts.find((contact) => contact.email === email);
+            const isPhoneNumberNew = phoneNumber && !matchingContacts.find((contact) => contact.phoneNumber === phoneNumber);
 
-            if (isNewInfo) {
+            if (isEmailNew || isPhoneNumberNew) {
                 const newSecondaryContact = await prisma.contact.create({
                     data: {
-                        email,
-                        phoneNumber,
+                        email: email || null,
+                        phoneNumber: phoneNumber || null,
                         linkedId: primaryContact.id,
                         linkPrecedence: "secondary",
                     },
@@ -85,20 +83,15 @@ export const identify = async (req, res) => {
             }
         }
 
-        // Step 5: Consolidate the response data
-        const allContacts = [primaryContact, ...secondaryContacts];
-        const emails = Array.from(
-            new Set(allContacts.map((contact) => contact.email).filter(Boolean))
-        );
-        const phoneNumbers = Array.from(
-            new Set(allContacts.map((contact) => contact.phoneNumber).filter(Boolean))
-        );
+        // Gather emails, phone numbers, and secondary contact IDs
+        const emails = [...new Set([primaryContact, ...secondaryContacts].map(c => c.email).filter(Boolean))];
+        const phoneNumbers = [...new Set([primaryContact, ...secondaryContacts].map(c => c.phoneNumber).filter(Boolean))];
         const secondaryContactIds = secondaryContacts.map((contact) => contact.id);
 
-        // Step 6: Return the response
+        // Send response
         res.status(200).json({
             contact: {
-                primaryContatctId: primaryContact.id,
+                primaryContactId: primaryContact.id,
                 emails,
                 phoneNumbers,
                 secondaryContactIds,
