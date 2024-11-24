@@ -6,6 +6,11 @@ import contactRoutes from "./routes/contactRoutes.js";
 
 app.use(express.json())
 
+app.get("/", (req, res) => {
+    res.send("API is running!");
+});
+
+
 app.use('/',contactRoutes)
 
 
