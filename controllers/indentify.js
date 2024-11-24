@@ -5,7 +5,6 @@ export const identify = async (req, res) => {
     try {
         const { email, phoneNumber } = req.body;
 
-        // Validate input
         if (!email && !phoneNumber) {
             return res.status(400).json({
                 error: "At least one of email or phoneNumber must be provided.",
@@ -13,11 +12,11 @@ export const identify = async (req, res) => {
         }
 
         // Fetch contacts matching email or phoneNumber
-        let matchingContacts = await prisma.contact.findMany({
+        let matchingContacts = await prisma.contact.findFirst({
             where: {
                 OR: [
-                    { email: email || undefined },
-                    { phoneNumber: phoneNumber || undefined },
+                    { email: email },
+                    { phoneNumber: phoneNumber },
                 ],
             },
         });
@@ -38,7 +37,7 @@ export const identify = async (req, res) => {
         let primaryContact = null;
         const secondaryContacts = [];
 
-        // Determine primary and secondary contacts
+        // Fetching primary and secondary contacts
         if (matchingContacts.length > 0) {
             primaryContact = matchingContacts.find(
                 (contact) => contact.linkPrecedence === "primary"
@@ -55,7 +54,7 @@ export const identify = async (req, res) => {
             }
         }
 
-        // If no primary contact, create one
+        // If there is no primary contact found, then create a one.
         if (!primaryContact) {
             primaryContact = await prisma.contact.create({
                 data: {
@@ -65,7 +64,7 @@ export const identify = async (req, res) => {
                 },
             });
         } else {
-            // Check if new info (email/phoneNumber) is not already linked
+            // Checking if new info (email/phoneNumber) is not already linked
             const isEmailNew = email && !matchingContacts.find((contact) => contact.email === email);
             const isPhoneNumberNew = phoneNumber && !matchingContacts.find((contact) => contact.phoneNumber === phoneNumber);
 
@@ -83,12 +82,30 @@ export const identify = async (req, res) => {
             }
         }
 
-        // Gather emails, phone numbers, and secondary contact IDs
-        const emails = [...new Set([primaryContact, ...secondaryContacts].map(c => c.email).filter(Boolean))];
-        const phoneNumbers = [...new Set([primaryContact, ...secondaryContacts].map(c => c.phoneNumber).filter(Boolean))];
+        // segregating emails,phone numbers,and secondary contact ids
+        const emailSet = new Set();
+        const phoneNumberSet = new Set();
+
+        // Collect valid emails
+        [primaryContact, ...secondaryContacts].forEach((contact) => {
+            if (contact.email) {
+                emailSet.add(contact.email); // Add only valid emails
+            }
+        });
+
+        // Collect valid phone numbers
+        [primaryContact, ...secondaryContacts].forEach((contact) => {
+            if (contact.phoneNumber) {
+                phoneNumberSet.add(contact.phoneNumber); // Add only valid phone numbers
+            }
+        });
+
+        // Convert Sets to Array
+        const emails = Array.from(emailSet);
+        const phoneNumbers = Array.from(phoneNumberSet);
+
         const secondaryContactIds = secondaryContacts.map((contact) => contact.id);
 
-        // Send response
         res.status(200).json({
             contact: {
                 primaryContactId: primaryContact.id,
@@ -98,7 +115,7 @@ export const identify = async (req, res) => {
             },
         });
     } catch (error) {
-        console.error("Error in /identify:", error);
+        console.error("Error occurred:", error);
         res.status(500).json({ error: "Internal Server Error" });
     }
 };
