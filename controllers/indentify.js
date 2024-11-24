@@ -83,27 +83,8 @@ export const identify = async (req, res) => {
         }
 
         // segregating emails,phone numbers,and secondary contact ids
-        const emailSet = new Set();
-        const phoneNumberSet = new Set();
-
-        // Collect valid emails
-        [primaryContact, ...secondaryContacts].forEach((contact) => {
-            if (contact.email) {
-                emailSet.add(contact.email); // Add only valid emails
-            }
-        });
-
-        // Collect valid phone numbers
-        [primaryContact, ...secondaryContacts].forEach((contact) => {
-            if (contact.phoneNumber) {
-                phoneNumberSet.add(contact.phoneNumber); // Add only valid phone numbers
-            }
-        });
-
-        // Convert Sets to Array
-        const emails = Array.from(emailSet);
-        const phoneNumbers = Array.from(phoneNumberSet);
-
+        const emails = [...new Set([primaryContact, ...secondaryContacts].map(c => c.email).filter(Boolean))];
+        const phoneNumbers = [...new Set([primaryContact, ...secondaryContacts].map(c => c.phoneNumber).filter(Boolean))];
         const secondaryContactIds = secondaryContacts.map((contact) => contact.id);
 
         res.status(200).json({
