@@ -9,9 +9,9 @@
     "build": "echo \"No build step required for this backend\""
   },
   "keywords": [],
-  "author": "Your Name",
+  "author": "Rachit Kumar",
   "license": "ISC",
-  "description": "Backend API for Zuvees application",
+  "description": "Backend API for Bite-Speed application",
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "express": "^4.21.1"
