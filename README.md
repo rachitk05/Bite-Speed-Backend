@@ -4,7 +4,7 @@ Bitespeed Backend Task: Identity Reconciliation
 🌐 Hosted Backend Link
 ----------------------
 
-🔗 **Try it out now**: [Bitespeed Backend API](https://bite-speed-backend-aymg.onrender.com/identify)
+🔗 **Try it out now**: [Bitespeed Backend API](https://bite-speed-backend.onrender.com/identify)
 
 (Make POST requests with JSON payloads to /identify.)
 
@@ -96,4 +96,4 @@ http://localhost:3001/identify
 🚀 Deployed Link
 ----------------
 
-🔗 **API**: [Bitespeed Backend API](https://bite-speed-backend-aymg.onrender.com/identify)
+🔗 **API**: [Bitespeed Backend API](https://bite-speed-backend.onrender.com/identify)
